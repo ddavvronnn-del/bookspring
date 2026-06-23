@@ -1,55 +1,60 @@
 package uz.imaan.bookspring.controller;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import uz.imaan.bookspring.dto.BookResponse;
 import uz.imaan.bookspring.entity.Book;
 import uz.imaan.bookspring.repository.BookRepository;
+import uz.imaan.bookspring.service.BookService;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/books")
 public class BookController {
-    private final BookRepository repository;
+    private final BookService service;
 
-    public BookController(BookRepository repository) {
-        this.repository = repository;
+    public BookController(BookService service) {
+        this.service = service;
+    }
+
+    @GetMapping
+    public List<BookResponse> getAll(){
+        return service.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Object> getBookById(@PathVariable Long id){
+        return service.findById(id)
+                .<ResponseEntity<Object>>map(ResponseEntity :: ok)
+                .orElse(ResponseEntity.status(404).body("Book not found"));
     }
 
     @PostMapping
-    public Book createBook(Book book){
-        return repository.save(book);
+    public ResponseEntity<BookResponse> createBook(@RequestBody Book book){
+        BookResponse create = service.create(book);
+        return ResponseEntity.status(201).body(create);
     }
 
-    public List<Book> getAllBooks(){
-        return repository.findAll();
-    }
-    @GetMapping("/id")
-    public Object getBookById(Long id){
-        Book book = repository.findById(id);
 
-        if (book == null){
-            return "Book not found";
-        }
-        return book;
-    }
+    public ResponseEntity<Object> updateBook(@PathVariable Long id, @RequestBody Book book){
 
-    public Object updateBook(Long id, Book book){
-
-        Book updateBook = repository.update(id,book);
-
-        if (updateBook == null){
-            return "Book not found";
-        }
-        return updateBook;
+        return service.update(id,book).
+                <ResponseEntity<Object>>map(ResponseEntity :: ok)
+                .orElse(ResponseEntity.status(404).body("Book not found"));
     }
 
     @DeleteMapping("/{id}")
-    public String deleteBook(Long id){
-        boolean deleted = repository.delete(id);
-
+    public ResponseEntity<Object> deleteBook(@PathVariable Long id){
+        boolean deleted = service.delete(id);
         if (!deleted){
-            return "Book not found";
+            return ResponseEntity.status(404).body("book not found");
         }
-        return "Book ochirildi";
+        return ResponseEntity.noContent().build();
     }
+
+
+
+
+
 }
